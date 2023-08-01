@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Document</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        form {
+            margin-bottom: 20px;
+        }
+
+        input[type="text"], select {
+            padding: 5px;
+        }
+
+        button {
+            padding: 5px 10px;
+        }
+
+        #moviesList {
+            display: flex;
+            flex-wrap: wrap;
+        }
+
+        #moviesList span {
+            width: 350px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin: 10px;
+        }
+
+        #moviesList h3 {
+            margin: 0;
+        }
+
+        #moviesList p {
+            color: #666;
+        }
+
+        #movieDetails {
+            margin-top: 20px;
+            border-top: 1px solid #ccc;
+            padding-top: 20px;
+        }
+
+        #movieDetails h2 {
+            margin-top: 0;
+        }
+
+        /* .img-container {
+            width: 100%;
+            height: 200px;
+            margin-bottom: 10px; 
+            overflow: hidden; 
+            border-radius: 5px;
+        } */
+
+        .img-container img {
+            width: 100px;
+            height: 200px;
+            object-fit: cover; 
+            margin-right: 10px;
+            display: flex
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            padding-top: 100px;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.4);
+            
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 800px;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: #000;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+
+        .movie-info {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            border: 1px solid black;
+            margin: 5px 5px 5px 5px;
+            padding: 5px 5px 5px 5px;
+        }
+
+        .movie-info .img-container {
+            margin-right: 10px;
+        }
+
+        .movie-info img {
+            width: 150px;
+            height: auto;
+        }
+
+        .movie-info h3, .movie-info p {
+            margin: 0;
+        }
+
+        .movie-info button {
+            margin-top: 10px;
+        }
+    
+    </style>
+</head>
+<body>
+
+<h1>Поиск фильмов</h1>
+<form id="searchForm" onsubmit="return searchMovies()">
+    <input type="text" id="movieTitle" placeholder="Название фильма">
+    <select id="movieType">
+        <option value="movie">Фильм</option>
+        <option value="series">Сериал</option>
+        <option value="episode">Эпизод</option>
+    </select>
+    <button type="submit">Поиск</button>
+</form>
+
+<div id="moviesList"></div>
+<div id="pagination"></div>
+
+
+<div id="myModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <div id="movieDetails"></div>
+    </div>
+</div>
+
+
+
+<script>
+
+function searchMovies() {
+    var title = $('#movieTitle').val();
+    var type = $('#movieType').val();
+
+    $.ajax({
+        url: 'http://www.omdbapi.com/',
+        type: 'GET',
+        dataType: 'json',
+        data: {
+            apikey: 'eca536c8',
+            s: title,
+            type: type
+        },
+        success: function(response) {
+            if (response.Response === 'True') {
+                displayMovies(response.Search);
+                displayPagination(response.totalResults, title, type);
+            }
+            else {
+                $('#moviesList').html('Фильм не найден!');
+                $('#pagination').html('');
+            }
+        }
+    });
+    return false;
+}
+
+function displayMovies(movies) {
+    var html = '';
+
+    for (var i = 0; i < movies.length; i++) {
+        var movie = movies[i];
+        html += '<div class="movie-info">' +
+            '<div class="img-container"><img src="' + movie.Poster + '" alt="' + movie.Title + '"></div>' +
+            '<div>' +
+                '<h3>' + movie.Title + '</h3>' +
+                '<p>' + movie.Year + '</p>' +
+                '<button onclick="showMovieDetails(\'' + movie.imdbID + '\')">Details</button>' +
+            '</div>' +
+        '</div>';
+    }
+    $('#moviesList').html(html);
+}
+
+
+function displayPagination(totalResults, title, type) {
+    var totalPages = Math.ceil(totalResults / 8);
+    var html = '';
+
+    for (var i = 1; i <= totalPages; i++) {
+        html += '<button onclick="searchMoviesByPage(\'' + title + '\', \'' + type + '\', ' + i + ')">' + i + '</button>';
+    }
+
+    $('#pagination').html(html);
+}
+
+function searchMoviesByPage(title, type, page) {
+    $.ajax({
+        url: 'http://www.omdbapi.com/',
+        type: 'GET',
+        dataType: 'json',
+        data: {
+            apikey: 'eca536c8',
+            s: title,
+            type: type,
+            page: page
+        },
+        success: function(response) {
+            displayMovies(response.Search);
+        }
+    });
+}
+
+function showMovieDetails(imdbID) {
+    $.ajax({
+        url: 'http://www.omdbapi.com/',
+        type: 'GET',
+        dataType: 'json',
+        data: {
+            apikey: 'eca536c8',
+            i: imdbID
+        },
+        success: function(response) {
+            var html = `<div class="img-container"><img src="${response.Poster}" alt="${response.Title}"></div>
+                <h2>${response.Title}</h2>
+                <p>Released: ${response.Released}</p>
+                <p>Genre: ${response.Genre}</p>
+                <p>Country: ${response.Country}</p>
+                <p>Director: ${response.Director}</p>
+                <p>Writer: ${response.Writer}</p>
+                <p>Actors: ${response.Actors}</p>
+                <p>Awards: ${response.Awards}</p>`;
+
+            $('#movieDetails').html(html);
+            $('#myModal').css('display', 'block');
+        }
+    });
+}
+
+$(document).on('click', '.close', function() {
+    $('#myModal').css('display', 'none');
+});
+
+$(document).on('click', function(event) {
+    if (event.target == document.getElementById('myModal')) {
+        $('#myModal').css('display', 'none');
+    }
+});
+
+</script>
+</body>
+</html>
